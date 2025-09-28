@@ -1,0 +1,142 @@
+pipeline {
+    // Menjalankan pipeline di agent manapun yang tersedia
+    agent any
+
+    environment{
+        urlGit = "github.com/edwinmalihu"
+        config = urlGit = "github.com/edwinmalihu/configuration-argoCD.git"
+        repo = "edwinmalihu"
+        serviceName = ""
+        tag = "latest"
+        serviceList = ""
+        configPath = "manifests/services"
+        ARGOCD_SERVER = "localhost:8089"
+    }
+
+    stages {
+        stage('Get Service') {
+            steps {
+                cleanWs()
+                echo 'Get Service'
+                withFileParameter('sevicefile') { 
+                    sh "mv $sevicefile > list-service.txt"
+                    def content
+                    content = sh(returnStdout: true, script: "cat list-service.txt")
+                    serviceList = content.readLines()
+                }
+            }
+        }
+        stage('Clone Source') {
+            steps {
+                cleanWs()
+                echo 'Cloning the repository...'
+                // Ganti URL ini dengan URL repository Git Anda
+                script{
+                    withCredentials([string(credentialsId: 'token-github', variable: 'GITHUB_TOKEN')]) {
+
+                        sh """
+                            git clone --branch main https://oauth2:${GITHUB_TOKEN}@$config
+                        """
+
+                        serviceList.each { sourceService ->
+                        
+                            sh """
+                                git clone --branch main https://oauth2:${GITHUB_TOKEN}@$urlGit/${sourceService}.git $sourceService
+                            """
+
+                        }
+                    }
+                }
+            }
+        }
+
+        // TAHAP 2: Membangun Docker Image di dalam Minikube
+        stage('Build Docker Image') {
+            steps {
+                echo "Building the Docker image"
+                // 'sh' menjalankan shell script
+                script{
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', passwordVariable: 'password', usernameVariable: 'username')]) {
+
+                        sh """
+                            docker login -u ${username} -p ${password}
+                        """
+
+                        serviceList.each { sourceService ->
+                            sh """
+                                cd ${sourceService}
+                                docker build -t ${sourceService} .
+                                docker tag ${sourceService} ${repo}/${sourceService}:${tag}
+                                docker push ${repo}/${sourceService}:${tag}
+                                docker rmi ${appname} || true
+                                docker rmi ${repo}/${appname}:${tag} || true
+                                cd ..
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage("Update Image On Yaml"){
+            steps{
+                script{
+                    serviceList.each { sourceService ->
+                        sh """
+                            cd configuration-argoCD/${configPath}
+                            sed -i 's|{IMAGE}|${repo}/${sourceService}:${tag}|g' ${sourceService}.yaml
+                            cd ..
+            
+                        """
+                    }
+
+                     sh """
+                            cd configuration-argoCD/${configPath}
+                            git add .
+                            git commit -m "Update image by jenkins"
+                            git push origin main
+                        """
+                }
+            }
+        }
+
+        // TAHAP 3: Deploy aplikasi ke Minikube
+        stage('Deploy With ArgoCD') {
+            steps {
+                script{
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', passwordVariable: 'password', usernameVariable: 'username')]) {
+                        sh """
+                            argocd login $ARGOCD_SERVER --username ${username} --password ${password} --insecure
+
+                            argocd app sync user-microservices-app
+                        """
+                    }
+                }
+            }
+        }
+
+        stage("cek Status Deployment") {
+            steps {
+                echo "Cek status deployment"
+                script{
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', passwordVariable: 'password', usernameVariable: 'username')]) {
+                        sh """
+                            argocd login $ARGOCD_SERVER --username ${username} --password ${password} --insecure
+                            argocd app wait user-microservices-app --health --timeout 300
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    // Blok yang dijalankan setelah pipeline selesai
+    post {
+        success {
+            echo 'Pipeline finished successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Please check the logs.'
+        }
+    }
+}
