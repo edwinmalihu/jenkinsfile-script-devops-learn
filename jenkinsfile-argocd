@@ -60,26 +60,26 @@ pipeline {
             steps {
                 echo "Building the Docker image"
                 // 'sh' menjalankan shell script
-                // script{
-                //     withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', passwordVariable: 'password', usernameVariable: 'username')]) {
+                script{
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', passwordVariable: 'password', usernameVariable: 'username')]) {
 
-                //         sh """
-                //             podman login -u ${username} -p ${password} $urlregistry
-                //         """
+                        sh """
+                            podman login -u ${username} -p ${password} $urlregistry
+                        """
 
-                //         serviceList.each { sourceService ->
-                //             sh """
-                //                 cd ${sourceService}
-                //                 podman build -t ${sourceService} -f dockerfile .
-                //                 podman tag ${sourceService} ${repo}/${sourceService}:${tag}
-                //                 podman push ${repo}/${sourceService}:${tag}
-                //                 podman rmi ${sourceService} || true
-                //                 podman rmi ${repo}/${sourceService}:${tag} || true
-                //                 cd ..
-                //             """
-                //         }
-                //     }
-                // }
+                        serviceList.each { sourceService ->
+                            sh """
+                                cd ${sourceService}
+                                podman build -t ${sourceService} -f dockerfile .
+                                podman tag ${sourceService} ${repo}/${sourceService}:${tag}
+                                podman push ${repo}/${sourceService}:${tag}
+                                podman rmi ${sourceService} || true
+                                podman rmi ${repo}/${sourceService}:${tag} || true
+                                cd ..
+                            """
+                        }
+                    }
+                }
             }
         }
 
