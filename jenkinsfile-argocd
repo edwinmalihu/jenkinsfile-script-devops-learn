@@ -4,7 +4,7 @@ pipeline {
 
     environment{
         urlGit = "github.com/edwinmalihu"
-        config = urlGit = "github.com/edwinmalihu/configuration-argoCD.git"
+        config = "github.com/edwinmalihu/configuration-argoCD.git"
         repo = "edwinmalihu"
         serviceName = ""
         tag = "latest"
