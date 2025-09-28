@@ -69,7 +69,7 @@ pipeline {
                         serviceList.each { sourceService ->
                             sh """
                                 cd ${sourceService}
-                                podman build -t ${sourceService} .
+                                podman build -t ${sourceService} -f dockerfile .
                                 podman tag ${sourceService} ${repo}/${sourceService}:${tag}
                                 podman push ${repo}/${sourceService}:${tag}
                                 podman rmi ${sourceService} || true
