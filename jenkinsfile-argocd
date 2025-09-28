@@ -86,21 +86,22 @@ pipeline {
         stage("Update Image On Yaml"){
             steps{
                 script{
-                    serviceList.each { sourceService ->
-                        sh """
-                            cd ${WORKSPACE}/configuration-argoCD/${configPath}
-                            sed -i '' 's|{IMAGE}|${repo}/${sourceService}:${tag}|g' ${sourceService}.yaml
-                            cd ..
+                    echo "Update Image On Yaml"
+                    // serviceList.each { sourceService ->
+                    //     sh """
+                    //         cd ${WORKSPACE}/configuration-argoCD/${configPath}
+                    //         sed -i '' 's|{IMAGE}|${repo}/${sourceService}:${tag}|g' ${sourceService}.yaml
+                    //         cd ..
             
-                        """
-                    }
+                    //     """
+                    // }
 
-                     sh """
-                            cd ${WORKSPACE}/configuration-argoCD/${configPath}
-                            git add .
-                            git commit -m "Update image by jenkins"
-                            git push origin main
-                        """
+                    //  sh """
+                    //         cd ${WORKSPACE}/configuration-argoCD/${configPath}
+                    //         git add .
+                    //         git commit -m "Update image by jenkins"
+                    //         git push origin main
+                    //     """
                 }
             }
         }
