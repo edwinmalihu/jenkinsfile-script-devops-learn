@@ -62,17 +62,17 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', passwordVariable: 'password', usernameVariable: 'username')]) {
 
                         sh """
-                            docker login -u ${username} -p ${password}
+                            podman login -u ${username} -p ${password}
                         """
 
                         serviceList.each { sourceService ->
                             sh """
                                 cd ${sourceService}
-                                docker build -t ${sourceService} .
-                                docker tag ${sourceService} ${repo}/${sourceService}:${tag}
-                                docker push ${repo}/${sourceService}:${tag}
-                                docker rmi ${appname} || true
-                                docker rmi ${repo}/${appname}:${tag} || true
+                                podman build -t ${sourceService} .
+                                podman tag ${sourceService} ${repo}/${sourceService}:${tag}
+                                podman push ${repo}/${sourceService}:${tag}
+                                podman rmi ${sourceService} || true
+                                podman rmi ${repo}/${sourceService}:${tag} || true
                                 cd ..
                             """
                         }
