@@ -16,14 +16,17 @@ pipeline {
     stages {
         stage('Get Service') {
             steps {
-                cleanWs()
-                echo 'Get Service'
-                withFileParameter('sevicefile') { 
-                    sh "mv $sevicefile list-service.txt"
-                    def content
-                    content = sh(returnStdout: true, script: "cat list-service.txt")
-                    serviceList = content.readLines()
+                script{
+                    cleanWs()
+                    echo 'Get Service'
+                    withFileParameter('sevicefile') { 
+                        sh "mv $sevicefile list-service.txt"
+                        def content
+                        content = sh(returnStdout: true, script: "cat list-service.txt")
+                        serviceList = content.readLines()
+                    }
                 }
+                
             }
         }
         stage('Clone Source') {
