@@ -11,6 +11,7 @@ pipeline {
         serviceList = ""
         configPath = "manifests/services"
         ARGOCD_SERVER = "localhost:8089"
+        urlregistry = "https://registry-1.docker.io"
     }
 
     stages {
@@ -62,7 +63,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'docker-hub-cred', passwordVariable: 'password', usernameVariable: 'username')]) {
 
                         sh """
-                            podman login -u ${username} -p ${password}
+                            podman login -u ${username} -p ${password} $urlregistry
                         """
 
                         serviceList.each { sourceService ->
