@@ -12,6 +12,7 @@ pipeline {
         configPath = "manifests/services"
         ARGOCD_SERVER = "localhost:8089"
         urlregistry = "https://registry-1.docker.io"
+        argocdAppPath = "configuration-argoCD/argocd/arogcd-application.yaml"
     }
 
     stages {
@@ -111,9 +112,22 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'cred-argocd', passwordVariable: 'password', usernameVariable: 'username')]) {
                         sh """
                             argocd login $ARGOCD_SERVER --username ${username} --password ${password} --insecure
+                            
+                        """
 
+                        try{
+                            sh """
+                                argocd app create user-microservices-app --upsert --file ${WORKSPACE}/$argocdAppPath
+
+                            """
+                        }catch(err){
+                            echo "Error: ${err}"
+                        }
+
+                        sh """
                             argocd app sync user-microservices-app
                         """
+                        
                     }
                 }
             }
